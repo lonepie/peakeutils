@@ -8,22 +8,20 @@ param(
 
 function Download-From-Github {
   param(
+    [string] $Url,
     [string] $Path,
     [string] $Token
   )
-  if ($Path -eq "") {
-    "Please specify a file path"
+  if (($Path -eq "") -and ($Url -eq "")) {
+    "Please specify a file path or Url"
   }
   elseif ($Token -eq "") {
     "Please specify a GitHub Token"
   }
   else {
-    # $wc = New-Object -TypeName System.Net.WebClient
-    # $wc.Headers.Add("Authorization", "token $token")
-    $url = "https://raw.githubusercontent.com/$Path"
-    # $content = $wc.DownloadString($url)
-    #
-    # return $content
+    if ($Url -eq "") {
+      $Url = "https://raw.githubusercontent.com/$Path"
+    }
     $headers = [System.Net.WebHeaderCollection]::new()
     $headers.Add("Authorization", "token $token")
     Download-File -Url $Url -Headers $headers
@@ -45,25 +43,23 @@ function Download-File {
     return $content
 }
 
-if ($Url -ne "") {
+if ($Token -eq "") {
     $fc = Download-File -Url $Url
 }
 else {
-  $fc = Download-From-Github -Path $Path -Token $Token
+  if ($Path -ne "") {
+    $fc = Download-From-Github -Path $Path -Token $Token
+  }
+  elseif ($Url -ne "") {
+    $fc = Download-From-Github -Url $Url -Token $Token
+  }
 }
 if ($Run) { 
   $scriptBlockContent = "&{ $fc }"
   if ($Params) {
     $formattedParams = &{ $Params } @params
     $scriptBlockContent += " $formattedParams"
-    # icm -ScriptBlock $script -ArgumentList $Params
-    # & $script $Params
-    #$fc | iex "$Params" 
-    # start-process pwsh """-Command $fc $Params"""
   }
-  # else {
-  #   & $script
-  # }
   $scriptblock = [ScriptBlock]::Create($scriptBlockContent)
   icm -ScriptBlock $scriptblock
 }
