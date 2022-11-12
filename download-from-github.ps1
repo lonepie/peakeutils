@@ -43,7 +43,7 @@ function Download-File {
     return $content
 }
 
-if ($Token -eq "") {
+if ($Url -ne "" -and $Token -eq "") {
     $fc = Download-File -Url $Url
 }
 else {
