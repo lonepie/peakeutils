@@ -2,7 +2,8 @@ param(
   [string] $Url,
   [string] $Path,
   [string] $Token,
-  [switch] $Run
+  [switch] $Run,
+  [string] $Params
 )
 
 function Download-From-Github {
@@ -50,5 +51,20 @@ if ($Url -ne "") {
 else {
   $fc = Download-From-Github -Path $Path -Token $Token
 }
-if ($Run) { & $fc; }
+if ($Run) { 
+  $scriptBlockContent = "&{ $fc }"
+  if ($Params) {
+    $formattedParams = &{ $Params } @params
+    $scriptBlockContent += " $formattedParams"
+    # icm -ScriptBlock $script -ArgumentList $Params
+    # & $script $Params
+    #$fc | iex "$Params" 
+    # start-process pwsh """-Command $fc $Params"""
+  }
+  # else {
+  #   & $script
+  # }
+  $scriptblock = [ScriptBlock]::Create($scriptBlockContent)
+  icm -ScriptBlock $scriptblock
+}
 else { $fc }
