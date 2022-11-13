@@ -35,16 +35,27 @@ function Download-File {
       [System.Net.WebHeaderCollection] $Headers
     )
 
-    $wc = [System.Net.WebClient]::new()
-    if ($Headers.Count -gt 0) {
+    try {
+      $wc = [System.Net.WebClient]::new()
+      if ($Headers.Count -gt 0) {
         $wc.Headers.Add($Headers)
       }
-    $content = $wc.DownloadString($url)
-    return $content
+      $content = $wc.DownloadString($url)
+      return $content
+    }
+    catch {
+      Write-Host "Error downloading from Url $Url"
+      Write-Host $_
+    }
 }
 
-if ($Url -ne "" -and $Token -eq "") {
+if ($Token -eq "") {
+  if ($Url -ne "") {
     $fc = Download-File -Url $Url
+  }
+  elseif ($Path -ne "") {
+    $fc = Download-File -Url "https://raw.githubusercontent.com/$Path"
+  }
 }
 else {
   if ($Path -ne "") {
@@ -55,12 +66,18 @@ else {
   }
 }
 if ($Run) { 
-  $scriptBlockContent = "&{ $fc }"
-  if ($Params) {
-    $formattedParams = &{ $Params } @params
-    $scriptBlockContent += " $formattedParams"
+  try {
+    $scriptBlockContent = "&{ $fc }"
+    if ($Params) {
+      $formattedParams = &{ $Params } @params
+      $scriptBlockContent += " $formattedParams"
+    }
+    $scriptblock = [ScriptBlock]::Create($scriptBlockContent)
+    icm -ScriptBlock $scriptblock
   }
-  $scriptblock = [ScriptBlock]::Create($scriptBlockContent)
-  icm -ScriptBlock $scriptblock
+  catch {
+    Write-Host "An error occurred running the downloaded file:"
+    Write-Host $_
+  }
 }
 else { $fc }
